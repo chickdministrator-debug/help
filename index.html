@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Chick Action - 小鸡行动</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Microsoft YaHei", sans-serif; background: #1a1a2e; color: #eee; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 10px; }
+        .login-wrap { width: 100%; height: 100vh; display: table; }
+        .login-cell { display: table-cell; vertical-align: middle; text-align: center; }
+        .login-box { width: 350px; margin: 0 auto; background: #16213e; border: 2px solid #e94560; padding: 30px; border-radius: 10px; }
+        .login-box h1 { color: #e94560; margin-bottom: 10px; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #0f3460; background: #0f3460; color: #fff; border-radius: 5px; }
+        .btn { width: 100%; padding: 12px; background: #e94560; color: #fff; border: none; cursor: pointer; border-radius: 5px; font-size: 16px; }
+        .btn:hover { background: #c13651; }
+        .hint-btn { margin-top: 10px; background: #533483; }
+        .hint-text { margin-top: 10px; padding: 10px; background: #0f3460; color: #ffd700; border-radius: 5px; text-align: left; display: none; }
+        .header { background: #16213e; border-bottom: 2px solid #e94560; padding: 15px; overflow: hidden; }
+        .header h1 { float: left; color: #e94560; }
+        .header .user-info { float: right; color: #aaa; }
+        .nav { float: left; width: 200px; background: #16213e; min-height: 600px; padding: 20px 0; }
+        .nav-item { padding: 15px 20px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.3s; }
+        .nav-item:hover, .nav-item.active { background: #0f3460; border-left-color: #e94560; color: #e94560; }
+        .main-content { float: left; width: calc(100% - 200px); padding: 20px; min-height: 600px; }
+        .clearfix { clear: both; }
+        .hidden { display: none; }
+        .game-card { float: left; width: 22%; margin: 1.5%; background: #16213e; padding: 15px; border: 1px solid #0f3460; cursor: pointer; }
+        .game-card:hover { border-color: #e94560; background: #1e2a4a; }
+        .game-icon { font-size: 40px; text-align: center; margin-bottom: 10px; color: #e94560; font-weight: bold; font-family: Arial; }
+        @media screen and (max-width: 768px) {
+            .nav { width: 100%; float: none; min-height: auto; }
+            .main-content { width: 100%; float: none; }
+            .game-card { width: 45%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginPage" class="login-wrap">
+        <div class="login-cell">
+            <div class="login-box">
+                <h1>🐤 Chick Action</h1>
+                <p style="color:#888;margin-bottom:20px;">小鸡行动公益网站</p>
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="账号">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="密码">
+                </div>
+                <button class="btn" onclick="login()">登录</button>
+                <button class="btn hint-btn" onclick="toggleHint()">密码提示</button>
+                <div id="hintText" style="display:none;margin-top:10px;padding:10px;background:#0f3460;color:#ffd700;border-radius:5px;text-align:left;">账号：启贤牛逼<br>密码：qxnb</div>
+                <p id="errorMsg" style="color:#e94560;margin-top:10px;"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainPage" style="display:none;">
+        <div class="header">
+            <h1>Chick Action - 小鸡行动</h1>
+            <div class="user-info">欢迎，启贤牛逼 | <span onclick="logout()" style="cursor:pointer;color:#e94560;">退出</span></div>
+            <div class="clearfix"></div>
+        </div>
+        <div class="container" style="padding:0;">
+            <div class="nav">
+                <div class="nav-item active" onclick="switchTab('games', this)">🎮 游戏导航</div>
+                <div class="nav-item" onclick="switchTab('browser', this)">🌐 浏览器下载</div>
+                <div class="nav-item" onclick="switchTab('articles', this)">📚 技术文章</div>
+                <div class="nav-item" onclick="switchTab('tools', this)">🛠️ 工具下载</div>
+            </div>
+            <div class="main-content" id="contentArea"></div>
+            <div class="clearfix"></div>
+        </div>
+    </div>
+
+    <script>
+    var CORRECT_USER = '启贤牛逼';
+    var CORRECT_PASS = 'qxnb';
+    var hintVisible = false;
+    
+    function setCookie(name, value, days) {
+        var expires = '';
+        if (days) {
+            var date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = '; expires=' + date.toGMTString();
+        }
+        document.cookie = name + '=' + value + expires + '; path=/';
+    }
+    
+    function getCookie(name) {
+        var nameEQ = name + '=';
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+    
+    function login() {
+        var user = document.getElementById('username').value;
+        var pass = document.getElementById('password').value;
+        if (user === CORRECT_USER && pass === CORRECT_PASS) {
+            setCookie('chick_login', '1', 1);
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainPage').style.display = 'block';
+            document.getElementById('hintText').style.display = 'none';
+            renderGames();
+        } else {
+            document.getElementById('errorMsg').innerHTML = '账号或密码错误！';
+        }
+    }
+    
+    function logout() {
+        document.cookie = 'chick_login=; Max-Age=0';
+        document.getElementById('loginPage').style.display = 'block';
+        document.getElementById('mainPage').style.display = 'none';
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('errorMsg').innerHTML = '';
+    }
+    
+    function toggleHint() {
+        var hint = document.getElementById('hintText');
+        var isHidden = hint.style.display === 'none' || hint.style.display === '';
+        hint.style.display = isHidden ? 'block' : 'none';
+    }
+    
+    function switchTab(tab, el) {
+        var items = document.getElementsByClassName('nav-item');
+        for (var i = 0; i < items.length; i++) items[i].className = 'nav-item';
+        if (el) el.className = 'nav-item active';
+        if (tab === 'games') renderGames();
+        else if (tab === 'browser') renderBrowser();
+        else if (tab === 'articles') renderArticles();
+        else if (tab === 'tools') renderTools();
+    }
+    
+    window.onload = function() {
+        if (getCookie('chick_login') === '1') {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('mainPage').style.display = 'block';
+            renderGames();
+        }
+    };
+    
+    document.getElementById('password').onkeypress = function(e) { if (e.keyCode === 13) login(); };
+    
+    var browserData = [
+        { name: "360极速浏览器X", desc: "极速内核，学校电脑首选", icon: "⚡", url: "https://browser.360.cn/ee/index.html", portable: false, tags: ["国产", "极速", "推荐"] },
+        { name: "360极速浏览器便携版", desc: "免安装，U盘即插即用", icon: "💾", url: "https://portableapps.com/apps/internet/360chrome-portable", portable: true, tags: ["便携", "免安装"] },
+        { name: "Chrome便携版", desc: "谷歌官方内核，兼容性好", icon: "🌐", url: "https://portableapps.com/apps/internet/google_chrome_portable", portable: true, tags: ["谷歌", "便携"] },
+        { name: "Firefox便携版", desc: "火狐浏览器，隐私保护", icon: "🦊", url: "https://portableapps.com/apps/internet/firefox_portable", portable: true, tags: ["开源", "隐私"] },
+        { name: "Edge便携版", desc: "微软新版，Chromium内核", icon: "🌊", url: "https://portableapps.com/apps/internet/msedge-portable", portable: true, tags: ["微软", "现代"] },
+        { name: "Vivaldi", desc: "高度定制，极客首选", icon: "🎭", url: "https://vivaldi.com/download/", portable: true, tags: ["定制", "高级"] },
+        { name: "Brave", desc: "自带广告拦截，隐私保护", icon: "🦁", url: "https://brave.com/download/", portable: true, tags: ["隐私", "拦截广告"] },
+        { name: "Opera GX", desc: "游戏浏览器，资源占用低", icon: "🎮", url: "https://www.opera.com/gx", portable: false, tags: ["游戏", "轻量"] },
+        { name: "Tor浏览器", desc: "匿名访问，科研用途", icon: "🧅", url: "https://www.torproject.org/download/", portable: true, tags: ["匿名", "科研"] },
+        { name: "Cent浏览器", desc: "百分浏览器，国产优化", icon: "💯", url: "https://www.centbrowser.cn/", portable: false, tags: ["国产", "优化"] }
+    ];
+
+    var externalGames = [
+        { name: "POKI主站", url: "https://poki.com", category: "综合", login: false },
+        { name: "POKI动作游戏", url: "https://poki.com/en/action", category: "动作", login: false },
+        { name: "POKI冒险游戏", url: "https://poki.com/en/adventure", category: "冒险", login: false },
+        { name: "POKI多人游戏", url: "https://poki.com/en/multiplayer", category: "多人", login: false },
+        { name: "POKI.io游戏", url: "https://poki.com/en/io", category: ".io", login: false },
+        { name: "MC.js.cool", url: "https://mc.js.cool", category: "MC", login: false },
+        { name: "MCJS.cc", url: "https://mcjs.cc", category: "MC", login: false },
+        { name: "MC网易网页版", url: "https://mc.163.com", category: "MC", login: true },
+        { name: "Minecraft Classic", url: "https://classic.minecraft.net", category: "MC", login: false },
+        { name: "4399小游戏", url: "https://www.4399.com", category: "综合", login: false },
+        { name: "7k7k小游戏", url: "https://www.7k7k.com", category: "综合", login: false },
+        { name: "CrazyGames", url: "https://crazygames.com", category: "综合", login: false },
+        { name: "itch.io", url: "https://itch.io", category: "独立", login: false },
+        { name: "Y8 Games", url: "https://www.y8.com", category: "综合", login: false },
+        { name: "Armor Games", url: "https://armorgames.com", category: "综合", login: false },
+        { name: "Newgrounds", url: "https://www.newgrounds.com", category: "综合", login: false },
+        { name: "Agar.io", url: "https://agar.io", category: ".io", login: false },
+        { name: "Slither.io", url: "https://slither.io", category: ".io", login: false },
+        { name: "Diep.io", url: "https://diep.io", category: ".io", login: false },
+        { name: "Krunker.io", url: "https://krunker.io", category: ".io", login: false },
+        { name: "Shell Shockers", url: "https://shellshock.io", category: ".io", login: false },
+        { name: "Zombs Royale", url: "https://zombsroyale.io", category: ".io", login: false },
+        { name: "Moomoo.io", url: "https://moomoo.io", category: ".io", login: false },
+        { name: "Starve.io", url: "https://starve.io", category: ".io", login: false },
+        { name: "FC在线模拟器", url: "https://fc.zhouer.org", category: "怀旧", login: false },
+        { name: "小霸王游戏机", url: "https://www.yikm.net", category: "怀旧", login: false },
+        { name: "Retro Games", url: "https://retrogames.cc", category: "怀旧", login: false },
+        { name: "Flash Museum", url: "https://flashmuseum.org", category: "Flash", login: false },
+        { name: "BlueMaxima Flashpoint", url: "https://flashpointarchive.org", category: "Flash", login: false },
+        { name: "CrazyGames益智", url: "https://crazygames.com/c/puzzle", category: "益智", login: false },
+        { name: "Sudoku.com", url: "https://sudoku.com", category: "益智", login: false },
+        { name: "CrazyGames射击", url: "https://crazygames.com/c/shooting", category: "射击", login: false },
+        { name: "Bullet Force", url: "https://bulletforce.io", category: "射击", login: false },
+        { name: "Ev.io", url: "https://ev.io", category: "射击", login: false },
+        { name: "Venge.io", url: "https://venge.io", category: "射击", login: false },
+        { name: "Moto X3M", url: "https://poki.com/en/moto-x3m", category: "体育", login: false },
+        { name: "Drift Hunters", url: "https://drifthunters.io", category: "竞速", login: false },
+        { name: "Madalin Stunt Cars", url: "https://madalinstuntcars2.com", category: "竞速", login: false },
+        { name: "Bloons TD", url: "https://ninjakiwi.com/Games/Tower-Defense", category: "策略", login: false },
+        { name: "Kingdom Rush", url: "https://www.kingdomrush.com", category: "塔防", login: false },
+        { name: "Instant Games", url: "https://www.instantgames.com", category: "免登录", login: false },
+        { name: "GameDistribution", url: "https://gamedistribution.com", category: "免登录", login: false },
+        { name: "HTML5 Games", url: "https://html5games.com", category: "免登录", login: false },
+        { name: "GameMonetize", url: "https://gamemonetize.com", category: "免登录", login: false }
+    ];
+
+    var localGames = [
+        { id: "snake", name: "贪吃蛇", icon: "S", desc: "方向键控制" },
+        { id: "tetris", name: "俄罗斯方块", icon: "T", desc: "←→移动 ↑旋转" },
+        { id: "puzzle2048", name: "2048", icon: "2", desc: "方向键移动" },
+        { id: "breakout", name: "打砖块", icon: "B", desc: "鼠标控制" },
+        { id: "plane", name: "飞机大战", icon: "P", desc: "空格射击" },
+        { id: "flappy", name: "像素鸟", icon: "F", desc: "空格飞行" },
+        { id: "pinball", name: "弹球台", icon: "O", desc: "A/D键控制" },
+        { id: "memory", name: "记忆翻牌", icon: "M", desc: "点击翻牌" },
+        { id: "maze", name: "迷宫逃脱", icon: "Z", desc: "WASD移动" },
+        { id: "pong", name: "乒乓球", icon: "G", desc: "W/S和↑/↓" },
+        { id: "racing", name: "赛车游戏", icon: "R", desc: "← →移动" },
+        { id: "jump", name: "跳跃大师", icon: "J", desc: "空格跳跃" },
+        { id: "shooter", name: "太空射击", icon: "X", desc: "空格射击" },
+        { id: "pacman", name: "吃豆人", icon: "C", desc: "方向键移动" },
+        { id: "tank", name: "坦克大战", icon: "K", desc: "WASD+空格" },
+        { id: "gold", name: "黄金矿工", icon: "K", desc: "空格出钩" },
+        { id: "tower", name: "塔防游戏", icon: "D", desc: "点击建造" },
+        { id: "chess", name: "五子棋", icon: "W", desc: "点击下棋" },
+        { id: "sudoku", name: "数独", icon: "S", desc: "点击+数字" },
+        { id: "mine", name: "扫雷", icon: "L", desc: "左键翻开" },
+        { id: "triangle", name: "三角突围", icon: "A", desc: "躲避射线" },
+        { id: "pyramid", name: "金字塔爬升", icon: "Y", desc: "空格上升" },
+        { id: "vortex", name: "三角漩涡", icon: "V", desc: "鼠标控制" },
+        { id: "asteroid", name: "三角陨石", icon: "I", desc: "方向键躲避" }
+    ];
+    
+    function renderBrowser() {
+        var html = '<div style="padding:20px;">';
+        html += '<h2 style="color:#e94560;margin-bottom:20px;">🌐 浏览器下载区</h2>';
+        html += '<p style="color:#888;margin-bottom:20px;">老师封了浏览器？这里有一键下载方案</p>';
+        html += '<div style="overflow:hidden;">';
+        
+        for (var i = 0; i < browserData.length; i++) {
+            var b = browserData[i];
+            html += '<div style="float:left;width:30%;margin:1.5%;background:#16213e;padding:15px;border:1px solid #0f3460;">';
+            html += '<div style="font-size:30px;margin-bottom:10px;">' + b.icon + '</div>';
+            html += '<h3 style="color:#e94560;margin-bottom:5px;">' + b.name + '</h3>';
+            html += '<p style="color:#aaa;font-size:12px;margin-bottom:10px;">' + b.desc + '</p>';
+            html += '<p style="margin-bottom:10px;">';
+            for (var j = 0; j < b.tags.length; j++) {
+                html += '<span style="background:#0f3460;color:#ffd700;padding:2px 6px;margin-right:5px;font-size:11px;">' + b.tags[j] + '</span>';
+            }
+            html += '</p>';
+            html += '<a href="' + b.url + '" target="_blank" style="display:block;background:#e94560;color:#fff;text-align:center;padding:8px;text-decoration:none;">立即下载</a>';
+            if (b.portable) {
+                html += '<p style="color:#4ecca3;font-size:11px;margin-top:5px;">✓ 便携版，无需安装</p>';
+            }
+            html += '</div>';
+        }
+        
+        html += '<div style="clear:both;"></div>';
+        html += '</div>';
+        
+        html += '<div style="margin-top:30px;padding:20px;background:#16213e;border:2px solid #533483;">';
+        html += '<h3 style="color:#533483;margin-bottom:15px;">🎮 外链游戏网站</h3>';
+        html += '<p style="color:#888;margin-bottom:15px;">无需登录，直接玩（部分可能需要网络）</p>';
+        html += '<div style="display:flex;flex-wrap:wrap;">';
+        
+        for (var i = 0; i < externalGames.length; i++) {
+            var g = externalGames[i];
+            var loginTag = g.login ? '<span style="background:#e94560;color:#fff;padding:2px 6px;font-size:10px;">需登录</span>' : '<span style="background:#4ecca3;color:#fff;padding:2px 6px;font-size:10px;">免登录</span>';
+            html += '<a href="' + g.url + '" target="_blank" style="display:block;width:22%;margin:1%;padding:10px;background:#0f3460;text-decoration:none;color:#fff;border:1px solid #16213e;">';
+            html += '<span style="font-size:12px;">' + g.name + '</span><br>';
+            html += '<span style="font-size:10px;color:#888;">' + g.category + '</span> ' + loginTag;
+            html += '</a>';
+        }
+        
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+        document.getElementById('contentArea').innerHTML = html;
+    }
+    
+    function renderGames() {
+        var html = '<h2 style="color:#e94560;margin:20px 0;">🎮 本地离线游戏 (20个)</h2>';
+        html += '<p style="color:#4ecca3;margin-bottom:20px;">✓ 无需网络，老师断网也能玩！</p>';
+        html += '<div style="overflow:hidden;">';
+        for (var i = 0; i < localGames.length; i++) {
+            var g = localGames[i];
+            html += '<div class="game-card" onclick="launchGame(\'' + g.id + '\')">';
+            html += '<div class="game-icon">' + g.icon + '</div>';
+            html += '<h4 style="color:#fff;text-align:center;">' + g.name + '</h4>';
+            html += '<p style="color:#888;font-size:11px;text-align:center;">' + g.desc + '</p>';
+            html += '</div>';
+        }
+        html += '</div>';
+        document.getElementById('contentArea').innerHTML = html;
+    }
+    
+    function renderArticles() {
+        var html = '<h2 style="color:#e94560;margin:20px 0;">📚 技术文章</h2>';
+        html += '<div style="background:#16213e;padding:20px;border-radius:10px;">';
+        html += '<h3 style="color:#ffd700;">3秒窗口期作战</h3>';
+        html += '<p style="color:#aaa;margin-top:10px;">老师切换屏幕时，你有3-5秒窗口期。Win+R调出运行，输入cmd回车获得命令行。</p>';
+        html += '<h3 style="color:#ffd700;margin-top:20px;">F8安全模式</h3>';
+        html += '<p style="color:#aaa;margin-top:10px;">开机狂按F8进入安全模式，学生端控制软件不加载。</p>';
+        html += '<h3 style="color:#ffd700;margin-top:20px;">粘滞键后门</h3>';
+        html += '<p style="color:#aaa;margin-top:10px;">登录界面按5次Shift可调出CMD（SYSTEM权限）。</p>';
+        html += '</div>';
+        document.getElementById('contentArea').innerHTML = html;
+    }
+    
+    function renderTools() {
+        var html = '<h2 style="color:#e94560;margin:20px 0;">🛠️ 工具下载</h2>';
+        html += '<div style="background:#16213e;padding:20px;border-radius:10px;">';
+        html += '<h3>Process Explorer</h3><p style="color:#aaa;">微软官方进程管理器，可强制结束保护进程</p>';
+        html += '<h3 style="margin-top:15px;">Everything</h3><p style="color:#aaa;">文件搜索神器，秒搜全盘</p>';
+        html += '<h3 style="margin-top:15px;">Notepad++</h3><p style="color:#aaa;">高级文本编辑器</p>';
+        html += '</div>';
+        document.getElementById('contentArea').innerHTML = html;
+    }
+    
+    function launchGame(gameId) {
+        var html = '<div style="padding:20px;">';
+        html += '<button onclick="goBackToGames()" style="background:#533483;color:#fff;border:none;padding:10px 20px;cursor:pointer;border-radius:5px;">← 返回</button>';
+        html += '<div style="margin-top:20px;text-align:center;">';
+        html += '<canvas id="gameCanvas" width="800" height="600" style="background:#16213e;border-radius:10px;"></canvas>';
+        html += '</div></div>';
+        document.getElementById('contentArea').innerHTML = html;
+        setTimeout(function() { initGame(gameId); }, 100);
+    }
+    
+    function goBackToGames() {
+        var items = document.getElementsByClassName('nav-item');
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].textContent.indexOf('游戏') !== -1) {
+                items[i].className = 'nav-item active';
+            } else {
+                items[i].className = 'nav-item';
+            }
+        }
+        renderGames();
+    }
+    
+    function initGame(gameId) {
+        var canvas = document.getElementById('gameCanvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        
+        switch(gameId) {
+            case 'snake': initSnake(canvas, ctx); break;
+            case 'tetris': initTetris(canvas, ctx); break;
+            case 'puzzle2048': init2048(canvas, ctx); break;
+            case 'breakout': initBreakout(canvas, ctx); break;
+            case 'plane': initPlane(canvas, ctx); break;
+            case 'flappy': initFlappy(canvas, ctx); break;
+            case 'pinball': initPinball(canvas, ctx); break;
+            case 'memory': initMemory(canvas, ctx); break;
+            case 'maze': initMaze(canvas, ctx); break;
+            case 'pong': initPong(canvas, ctx); break;
+            case 'racing': initRacing(canvas, ctx); break;
+            case 'jump': initJump(canvas, ctx); break;
+            case 'shooter': initShooter(canvas, ctx); break;
+            case 'pacman': initPacman(canvas, ctx); break;
+            case 'tank': initTank(canvas, ctx); break;
+            case 'gold': initGold(canvas, ctx); break;
+            case 'tower': initTower(canvas, ctx); break;
+            case 'chess': initChess(canvas, ctx); break;
+            case 'sudoku': initSudoku(canvas, ctx); break;
+            case 'mine': initMine(canvas, ctx); break;
+            case 'triangle': initTriangle(canvas, ctx); break;
+            case 'pyramid': initPyramid(canvas, ctx); break;
+            case 'vortex': initVortex(canvas, ctx); break;
+            case 'asteroid': initAsteroid(canvas, ctx); break;
+        }
+    }
+    
+    function initSnake(canvas, ctx) {
+        var gs = 20, tc = 40, snake = [{x:20,y:15}], food = {x:25,y:15}, dx=1, dy=0, score=0, gameOver=false, paused=false, loop;
+        
+        function draw() {
+            ctx.fillStyle = '#16213e';
+            ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#0f3460';
+            for (var x = 0; x < tc; x++) {
+                for (var y = 0; y < 30; y++) {
+                    if ((x + y) % 2 === 0) ctx.fillRect(x * gs, y * gs, gs, gs);
+                }
+            }
+            ctx.fillStyle = '#e94560';
+            ctx.fillRect(food.x * gs, food.y * gs, gs - 2, gs - 2);
+            for (var i = 0; i < snake.length; i++) {
+                ctx.fillStyle = i === 0 ? '#4ecca3' : '#3da37f';
+                ctx.fillRect(snake[i].x * gs + 1, snake[i].y * gs + 1, gs - 4, gs - 4);
+            }
+            ctx.fillStyle = '#fff';
+            ctx.font = '18px Arial';
+            ctx.fillText('分数:' + score + ' | ←↑↓→移动 P暂停 R重开', 10, 590);
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, 800, 600);
+                ctx.fillStyle = '#e94560';
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('游戏结束!', 400, 250);
+                ctx.fillStyle = '#fff';
+                ctx.font = '25px Arial';
+                ctx.fillText('得分:' + score, 400, 310);
+                ctx.fillText('按 R 重新开始', 400, 380);
+            }
+        }
+        
+        function update() {
+            if (paused || gameOver) return;
+            var h = {x: snake[0].x + dx, y: snake[0].y + dy};
+            if (h.x < 0) h.x = tc - 1;
+            if (h.x >= tc) h.x = 0;
+            if (h.y < 0) h.y = 29;
+            if (h.y >= 30) h.y = 0;
+            for (var i = 0; i < snake.length; i++) {
+                if (h.x === snake[i].x && h.y === snake[i].y) {
+                    gameOver = true;
+                    clearInterval(loop);
+                    draw();
+                    return;
+                }
+            }
+            snake.unshift(h);
+            if (h.x === food.x && h.y === food.y) {
+                score += 10;
+                do {
+                    food.x = Math.floor(Math.random() * tc);
+                    food.y = Math.floor(Math.random() * 30);
+                } while (snake.some(function(s) { return s.x === food.x && s.y === food.y; }));
+            } else {
+                snake.pop();
+            }
+            draw();
+        }
+        
+        function reset() {
+            snake = [{x:20, y:15}];
+            food = {x:25, y:15};
+            dx = 1;
+            dy = 0;
+            score = 0;
+            gameOver = false;
+            paused = false;
+            clearInterval(loop);
+            draw();
+            loop = setInterval(update, 100);
+        }
+        
+        document.onkeydown = function(e) {
+            if (e.keyCode === 82) { reset(); return; }
+            if (e.keyCode === 80) { paused = !paused; return; }
+            if (paused || gameOver) return;
+            switch(e.keyCode) {
+                case 37: if (dx !== 1) { dx = -1; dy = 0; } break;
+                case 38: if (dy !== 1) { dx = 0; dy = -1; } break;
+                case 39: if (dx !== -1) { dx = 1; dy = 0; } break;
+                case 40: if (dy !== -1) { dx = 0; dy = 1; } break;
+            }
+        };
+        reset();
+    }
+    
+    function initTetris(canvas, ctx) {
+        var C = 10, R = 20, BS = 28, board = [], piece = null, score = 0, loop, over = false, paused = false;
+        var SHAPES = [[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
+        var COLORS = ['#00f0f0','#f0f000','#a000f0','#f0a000','#0000f0','#00f000','#f00000'];
+        
+        function createBoard() {
+            board = [];
+            for (var r = 0; r < R; r++) {
+                board[r] = [];
+                for (var c = 0; c < C; c++) board[r][c] = 0;
+            }
+        }
+        
+        function newPiece() {
+            var t = Math.floor(Math.random() * SHAPES.length);
+            piece = { shape: JSON.parse(JSON.stringify(SHAPES[t])), color: COLORS[t], x: Math.floor(C / 2) - 1, y: 0 };
+            if (collision()) { over = true; clearInterval(loop); showOver(); }
+        }
+        
+        function collision() {
+            for (var r = 0; r < piece.shape.length; r++) {
+                for (var c = 0; c < piece.shape[r].length; c++) {
+                    if (piece.shape[r][c]) {
+                        var nx = piece.x + c, ny = piece.y + r;
+                        if (nx < 0 || nx >= C || ny >= R) return true;
+                        if (ny >= 0 && board[ny][nx]) return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        function merge() {
+            for (var r = 0; r < piece.shape.length; r++) {
+                for (var c = 0; c < piece.shape[r].length; c++) {
+                    if (piece.shape[r][c]) {
+                        var y = piece.y + r, x = piece.x + c;
+                        if (y >= 0) board[y][x] = piece.color;
+                    }
+                }
+            }
+        }
+        
+        function clearLines() {
+            for (var r = R - 1; r >= 0; r--) {
+                var full = true;
+                for (var c = 0; c < C; c++) { if (!board[r][c]) { full = false; break; } }
+                if (full) { board.splice(r, 1); board.unshift(new Array(C).fill(0)); score += 100; r++; }
+            }
+        }
+        
+        function rotate() {
+            var ns = [], rows = piece.shape.length, cols = piece.shape[0].length;
+            for (var c = 0; c < cols; c++) { ns[c] = []; for (var r = rows - 1; r >= 0; r--) ns[c].push(piece.shape[r][c]); }
+            var old = piece.shape; piece.shape = ns; if (collision()) piece.shape = old;
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#0f3460'; ctx.fillRect(0, 0, C * BS, R * BS);
+            for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) if (board[r][c]) { ctx.fillStyle = board[r][c]; ctx.fillRect(c * BS + 2, r * BS + 2, BS - 4, BS - 4); }
+            if (piece) { ctx.fillStyle = piece.color; for (var r = 0; r < piece.shape.length; r++) for (var c = 0; c < piece.shape[r].length; c++) if (piece.shape[r][c] && piece.y + r >= 0) ctx.fillRect((piece.x + c) * BS + 2, (piece.y + r) * BS + 2, BS - 4, BS - 4); }
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial'; ctx.fillText('分数:' + score + ' | ←→移动 ↑旋转 ↓加速 P暂停', 10, R * BS + 40);
+        }
+        
+        function update() {
+            if (paused || over) return;
+            piece.y++;
+            if (collision()) { piece.y--; merge(); clearLines(); newPiece(); }
+            draw();
+        }
+        
+        function showOver() {
+            ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, C * BS, R * BS);
+            ctx.fillStyle = '#e94560'; ctx.font = '35px Arial'; ctx.textAlign = 'center';
+            ctx.fillText('游戏结束!', C * BS / 2, R * BS / 2 - 20);
+            ctx.fillStyle = '#fff'; ctx.font = '20px Arial';
+            ctx.fillText('得分:' + score + ' 按R重新开始', C * BS / 2, R * BS / 2 + 20);
+        }
+        
+        document.onkeydown = function(e) {
+            if (e.keyCode === 82) { createBoard(); score = 0; over = false; paused = false; clearInterval(loop); newPiece(); draw(); loop = setInterval(update, 500); return; }
+            if (!piece || over) return;
+            if (e.keyCode === 80) { paused = !paused; return; }
+            if (paused) return;
+            switch(e.keyCode) { case 37: piece.x--; if (collision()) piece.x++; break; case 39: piece.x++; if (collision()) piece.x--; break; case 40: piece.y++; if (collision()) { piece.y--; merge(); clearLines(); newPiece(); } score++; break; case 38: rotate(); break; }
+            draw();
+        };
+        createBoard(); newPiece(); draw(); loop = setInterval(update, 500);
+    }
+    
+    function init2048(canvas, ctx) {
+        var size = 4, cs = 100, grid = [], score = 0, over = false;
+        
+        function init() {
+            grid = []; for (var i = 0; i < size; i++) { grid[i] = []; for (var j = 0; j < size; j++) grid[i][j] = 0; }
+            score = 0; over = false; addRand(); addRand(); draw();
+        }
+        
+        function addRand() {
+            var emp = []; for (var i = 0; i < size; i++) for (var j = 0; j < size; j++) if (grid[i][j] === 0) emp.push({x: i, y: j});
+            if (emp.length > 0) { var s = emp[Math.floor(Math.random() * emp.length)]; grid[s.x][s.y] = Math.random() < 0.9 ? 2 : 4; }
+        }
+        
+        function getColor(v) { var c = {2:'#eee4da',4:'#ede0c8',8:'#f2b179',16:'#f59563',32:'#f67c5f',64:'#f65e3b',128:'#edcf72',256:'#edcc61',512:'#edc850',1024:'#edc53f',2048:'#edc22e'}; return c[v] || '#3c3a32'; }
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#bbada0'; ctx.fillRect(0, 0, size * cs + 20, size * cs + 20);
+            for (var i = 0; i < size; i++) for (var j = 0; j < size; j++) {
+                var x = j * cs + 10, y = i * cs + 10, v = grid[i][j];
+                ctx.fillStyle = v === 0 ? '#cdc1b4' : getColor(v); ctx.fillRect(x, y, cs - 10, cs - 10);
+                if (v) { ctx.fillStyle = v <= 4 ? '#776e65' : '#f9f6f2'; ctx.font = 'bold 35px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(v, x + cs / 2 - 5, y + cs / 2 - 5); }
+            }
+            ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.textAlign = 'left'; ctx.fillText('分数:' + score + ' | 方向键移动 R重开', 10, size * cs + 50);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, size * cs + 20, size * cs + 20); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('游戏结束!', (size * cs + 20) / 2, (size * cs + 20) / 2 - 20); ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.fillText('得分:' + score, (size * cs + 20) / 2, (size * cs + 20) / 2 + 20); }
+        }
+        
+        function move(dir) {
+            if (over) return;
+            var moved = false, merged = []; for (var i = 0; i < size; i++) merged[i] = [];
+            function slide(f, t) {
+                if (grid[f.x][f.y] === 0) return false;
+                if (grid[t.x][t.y] === 0) { grid[t.x][t.y] = grid[f.x][f.y]; grid[f.x][f.y] = 0; return true; }
+                else if (grid[t.x][t.y] === grid[f.x][f.y] && !merged[t.x][t.y]) { grid[t.x][t.y] *= 2; score += grid[t.x][t.y]; grid[f.x][f.y] = 0; merged[t.x][t.y] = true; return true; }
+                return false;
+            }
+            if (dir === 'left') { for (var i = 0; i < size; i++) for (var j = 1; j < size; j++) for (var k = j; k > 0; k--) if (slide({x: i, y: k}, {x: i, y: k - 1})) moved = true; }
+            else if (dir === 'right') { for (var i = 0; i < size; i++) for (var j = size - 2; j >= 0; j--) for (var k = j; k < size - 1; k++) if (slide({x: i, y: k}, {x: i, y: k + 1})) moved = true; }
+            else if (dir === 'up') { for (var j = 0; j < size; j++) for (var i = 1; i < size; i++) for (var k = i; k > 0; k--) if (slide({x: k, y: j}, {x: k - 1, y: j})) moved = true; }
+            else if (dir === 'down') { for (var j = 0; j < size; j++) for (var i = size - 2; i >= 0; i--) for (var k = i; k < size - 1; k++) if (slide({x: k, y: j}, {x: k + 1, y: j})) moved = true; }
+            if (moved) { addRand(); draw(); if (isOver()) { over = true; draw(); } }
+        }
+        
+        function isOver() {
+            for (var i = 0; i < size; i++) for (var j = 0; j < size; j++) { if (grid[i][j] === 0) return false; if (j < size - 1 && grid[i][j] === grid[i][j + 1]) return false; if (i < size - 1 && grid[i][j] === grid[i + 1][j]) return false; }
+            return true;
+        }
+        
+        document.onkeydown = function(e) { switch(e.keyCode) { case 37: move('left'); break; case 38: move('up'); break; case 39: move('right'); break; case 40: move('down'); break; case 82: init(); break; } };
+        init();
+    }
+    
+    function initBreakout(canvas, ctx) {
+        var paddle = {x: 350, y: 550, w: 100, h: 12}, ball = {x: 400, y: 530, dx: 3, dy: -3, r: 8}, bricks = [], score = 0, loop, over = false, won = false;
+        for (var r = 0; r < 5; r++) for (var c = 0; c < 10; c++) bricks.push({x: c * 75 + 30, y: r * 30 + 40, w: 70, h: 25, c: ['#e94560','#ffd700','#4ecca3','#533483','#3498db'][r], hit: false});
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            bricks.forEach(function(b) { if (!b.hit) { ctx.fillStyle = b.c; ctx.fillRect(b.x, b.y, b.w, b.h); } });
+            ctx.fillStyle = '#4ecca3'; ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.closePath();
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial'; ctx.fillText('分数:' + score + ' | 鼠标控制', 10, 30);
+        }
+        
+        function update() {
+            if (over || won) return;
+            ball.x += ball.dx; ball.y += ball.dy;
+            if (ball.x - ball.r < 0) { ball.x = ball.r; ball.dx = -ball.dx; }
+            if (ball.x + ball.r > 800) { ball.x = 800 - ball.r; ball.dx = -ball.dx; }
+            if (ball.y - ball.r < 0) { ball.y = ball.r; ball.dy = -ball.dy; }
+            if (ball.y + ball.r > paddle.y && ball.y - ball.r < paddle.y + paddle.h && ball.x > paddle.x && ball.x < paddle.x + paddle.w) { ball.dy = -Math.abs(ball.dy); ball.y = paddle.y - ball.r; ball.dx = (ball.x - paddle.x) / paddle.w * 8 - 4; }
+            for (var i = 0; i < bricks.length; i++) { var b = bricks[i]; if (!b.hit && ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) { b.hit = true; ball.dy = -ball.dy; score += 10; break; } }
+            if (ball.y > 600) { over = true; clearInterval(loop); draw(); return; }
+            if (bricks.every(function(b) { return b.hit; })) { won = true; clearInterval(loop); draw(); return; }
+            draw();
+        }
+        
+        canvas.onmousemove = function(e) { var rect = canvas.getBoundingClientRect(); paddle.x = e.clientX - rect.left - paddle.w / 2; if (paddle.x < 0) paddle.x = 0; if (paddle.x > 800 - paddle.w) paddle.x = 800 - paddle.w; };
+        document.onkeydown = function(e) { if (e.keyCode === 82) { bricks.forEach(function(b) { b.hit = false; }); ball = {x: 400, y: 530, dx: 3, dy: -3, r: 8}; score = 0; over = false; won = false; clearInterval(loop); draw(); loop = setInterval(update, 16); } };
+        draw(); loop = setInterval(update, 16);
+    }
+    
+    function initPlane(canvas, ctx) {
+        var player = {x: 375, y: 500, w: 50, h: 40}, bullets = [], enemies = [], score = 0, loop, over = false, keys = {};
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#0f3460'; for (var i = 0; i < 50; i++) ctx.fillRect(Math.random() * 800, Math.random() * 600, 2, 2);
+            ctx.fillStyle = '#4ecca3'; ctx.beginPath(); ctx.moveTo(player.x + 25, player.y); ctx.lineTo(player.x, player.y + 40); ctx.lineTo(player.x + 50, player.y + 40); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffd700'; bullets.forEach(function(b) { ctx.fillRect(b.x, b.y, 4, 12); });
+            ctx.fillStyle = '#e94560'; enemies.forEach(function(e) { ctx.beginPath(); ctx.moveTo(e.x + 20, e.y + 40); ctx.lineTo(e.x, e.y); ctx.lineTo(e.x + 40, e.y); ctx.closePath(); ctx.fill(); });
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial'; ctx.fillText('分数:' + score + ' | 方向键移动 空格射击 R重开', 10, 590);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('游戏结束!', 400, 280); ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.fillText('得分:' + score + ' 按R重新开始', 400, 340); }
+        }
+        
+        function update() {
+            if (over) return;
+            if (keys[37] && player.x > 0) player.x -= 6; if (keys[39] && player.x < 750) player.x += 6; if (keys[38] && player.y > 0) player.y -= 6; if (keys[40] && player.y < 560) player.y += 6;
+            bullets.forEach(function(b, i) { b.y -= 10; if (b.y < 0) bullets.splice(i, 1); });
+            if (Math.random() < 0.03) enemies.push({x: Math.random() * 760, y: -40, w: 40, h: 40});
+            enemies.forEach(function(e, i) { e.y += 3; if (e.y > 600) enemies.splice(i, 1); });
+            enemies.forEach(function(e, i) { for (var j = bullets.length - 1; j >= 0; j--) { var b = bullets[j]; if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) { enemies.splice(i, 1); bullets.splice(j, 1); score += 10; break; } } });
+            enemies.forEach(function(e) { if (e.x < player.x + player.w && e.x + e.w > player.x && e.y < player.y + player.h && e.y + e.h > player.y) { over = true; clearInterval(loop); draw(); } });
+            draw();
+        }
+        
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 32) bullets.push({x: player.x + 23, y: player.y}); if (e.keyCode === 82) { enemies = []; bullets = []; score = 0; player = {x: 375, y: 500, w: 50, h: 40}; over = false; clearInterval(loop); draw(); loop = setInterval(update, 16); } };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        draw(); loop = setInterval(update, 16);
+    }
+    
+    function initFlappy(canvas, ctx) {
+        var bird = {x: 100, y: 250, v: 0}, pipes = [], score = 0, loop, over = false;
+        
+        function draw() {
+            ctx.fillStyle = '#70c5ce'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#90d5ec'; ctx.fillRect(0, 500, 800, 100);
+            pipes.forEach(function(p) { ctx.fillStyle = '#5cb85c'; ctx.fillRect(p.x, 0, 60, p.top); ctx.fillRect(p.x, p.top + 150, 60, 600 - p.top - 150); });
+            ctx.fillStyle = '#f7dc6f'; ctx.beginPath(); ctx.arc(bird.x, bird.y, 18, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.fillText('分数:' + score, 400, 50);
+            ctx.font = '16px Arial'; ctx.fillText('空格飞行 R重开', 400, 590);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.fillText('游戏结束! 得分:' + score, 400, 300); ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.fillText('按R重新开始', 400, 360); }
+        }
+        
+        function update() {
+            if (over) return;
+            bird.v += 0.4; bird.y += bird.v;
+            if (bird.y > 480 || bird.y < 0) { over = true; clearInterval(loop); draw(); return; }
+            if (Math.random() < 0.015) pipes.push({x: 800, top: Math.random() * 250 + 50, passed: false});
+            pipes.forEach(function(p, i) { p.x -= 3; if (p.x + 60 < 0) { pipes.splice(i, 1); return; } if (!p.passed && bird.x > p.x + 60) { p.passed = true; score++; } if (bird.x + 18 > p.x && bird.x - 18 < p.x + 60 && (bird.y - 18 < p.top || bird.y + 18 > p.top + 150)) { over = true; clearInterval(loop); draw(); } });
+            draw();
+        }
+        
+        function flap() { if (over) { reset(); return; } bird.v = -8; }
+        function reset() { bird = {x: 100, y: 250, v: 0}; pipes = []; score = 0; over = false; clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        
+        canvas.onclick = flap;
+        document.onkeydown = function(e) { if (e.keyCode === 32) flap(); if (e.keyCode === 82) reset(); };
+        reset();
+    }
+    
+    function initPinball(canvas, ctx) {
+        var ball = {x: 400, y: 500, dx: 0, dy: 0}, paddles = [{x: 150, y: 300, angle: 0}, {x: 650, y: 300, angle: 0}], score = 0, loop, over = false, bumpers = [{x: 200, y: 200, r: 30}, {x: 400, y: 150, r: 30}, {x: 600, y: 200, r: 30}], keys = {};
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.strokeStyle = '#533483'; ctx.lineWidth = 10; ctx.beginPath(); ctx.arc(400, 600, 200, Math.PI, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(200, 600); ctx.lineTo(200, 100); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(600, 600); ctx.lineTo(600, 100); ctx.stroke();
+            ctx.beginPath(); ctx.arc(400, 100, 200, 0, Math.PI); ctx.stroke();
+            bumpers.forEach(function(b) { ctx.fillStyle = '#e94560'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); });
+            ctx.save(); ctx.translate(paddles[0].x, paddles[0].y); ctx.rotate(paddles[0].angle); ctx.fillStyle = '#4ecca3'; ctx.fillRect(-60, -8, 60, 16); ctx.restore();
+            ctx.save(); ctx.translate(paddles[1].x, paddles[1].y); ctx.rotate(paddles[1].angle); ctx.fillStyle = '#4ecca3'; ctx.fillRect(0, -8, 60, 16); ctx.restore();
+            ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial'; ctx.fillText('分数:' + score + ' | A/D左挡板 ←/→右挡板 R重开', 10, 590);
+        }
+        
+        function update() {
+            if (over) return;
+            if (keys[65]) paddles[0].angle = Math.max(paddles[0].angle - 0.05, -0.5); else paddles[0].angle = Math.min(paddles[0].angle + 0.02, 0.5);
+            if (keys[39]) paddles[1].angle = Math.min(paddles[1].angle + 0.05, 0.5); else paddles[1].angle = Math.max(paddles[1].angle - 0.02, -0.5);
+            ball.x += ball.dx; ball.y += ball.dy; ball.dy += 0.15;
+            bumpers.forEach(function(b) { var dx = ball.x - b.x, dy = ball.y - b.y, dist = Math.sqrt(dx * dx + dy * dy); if (dist < b.r + 10) { var angle = Math.atan2(dy, dx); ball.x = b.x + Math.cos(angle) * (b.r + 12); ball.y = b.y + Math.sin(angle) * (b.r + 12); ball.dx = Math.cos(angle) * 8; ball.dy = Math.sin(angle) * 8; score += 5; } });
+            if (ball.y > 650) { over = true; clearInterval(loop); draw(); } draw();
+        }
+        
+        function reset() { ball = {x: 400, y: 500, dx: 0, dy: 0}; score = 0; over = false; paddles[0].angle = 0; paddles[1].angle = 0; clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 82) reset(); };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        draw(); loop = setInterval(update, 16);
+    }
+    
+    function initMemory(canvas, ctx) {
+        var cards = [], flipped = [], matched = 0, moves = 0, canFlip = true, emojis = ['🍎','🍊','🍋','🍇','🍓','🍒','🥝','🍑'];
+        
+        function init() {
+            cards = []; flipped = []; matched = 0; moves = 0; canFlip = true;
+            var deck = emojis.concat(emojis);
+            for (var i = deck.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = deck[i]; deck[i] = deck[j]; deck[j] = t; }
+            deck.forEach(function(e) { cards.push({emoji: e, flipped: false, matched: false}); });
+            draw();
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.fillText('配对:' + matched + '/' + emojis.length + ' | 步数:' + moves + ' | 点击翻牌', 10, 30);
+            var cols = 4, cw = 150, ch = 120, sx = (800 - cols * cw - 60) / 2, sy = 80, gap = 20;
+            cards.forEach(function(c, i) {
+                var row = Math.floor(i / cols), col = i % cols; var x = sx + col * (cw + gap), y = sy + row * (ch + gap);
+                ctx.fillStyle = c.matched ? '#2d5a3d' : c.flipped ? '#0f3460' : '#533483';
+                ctx.fillRect(x, y, cw, ch); ctx.strokeStyle = '#4ecca3'; ctx.lineWidth = 3; ctx.strokeRect(x, y, cw, ch);
+                ctx.fillStyle = '#fff'; ctx.font = '50px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(c.flipped || c.matched ? c.emoji : '?', x + cw / 2, y + ch / 2);
+            });
+            if (matched === emojis.length) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#4ecca3'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('恭喜通关! 用时' + moves + '步', 400, 300); }
+        }
+        
+        canvas.onclick = function(e) {
+            if (matched === emojis.length || !canFlip) return;
+            var rect = canvas.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
+            var cols = 4, cw = 150, ch = 120, sx = (800 - cols * cw - 60) / 2, sy = 80, gap = 20;
+            cards.forEach(function(c, i) {
+                var row = Math.floor(i / cols), col = i % cols; var cx = sx + col * (cw + gap), cy = sy + row * (ch + gap);
+                if (x > cx && x < cx + cw && y > cy && y < cy + ch && !c.flipped && !c.matched) {
+                    c.flipped = true; flipped.push(i);
+                    if (flipped.length === 2) { moves++; canFlip = false;
+                        if (cards[flipped[0]].emoji === cards[flipped[1]].emoji) { cards[flipped[0]].matched = true; cards[flipped[1]].matched = true; matched++; flipped = []; canFlip = true; }
+                        else { setTimeout(function() { cards[flipped[0]].flipped = false; cards[flipped[1]].flipped = false; flipped = []; canFlip = true; draw(); }, 800); }
+                        draw();
+                    }
+                }
+            });
+        };
+        document.onkeydown = function(e) { if (e.keyCode === 82) init(); };
+        init();
+    }
+    
+    function initMaze(canvas, ctx) {
+        var size = 21, cs = 28, maze = [], player = {x: 1, y: 1}, exit = {x: size - 2, y: size - 2}, won = false, start;
+        
+        function genMaze() {
+            for (var i = 0; i < size; i++) { maze[i] = []; for (var j = 0; j < size; j++) maze[i][j] = 1; }
+            function carve(x, y) {
+                maze[y][x] = 0; var dirs = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+                for (var i = dirs.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = dirs[i]; dirs[i] = dirs[j]; dirs[j] = t; }
+                dirs.forEach(function(d) { var nx = x + d[0], ny = y + d[1]; if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && maze[ny][nx] === 1) { maze[y + d[1] / 2][x + d[0] / 2] = 0; carve(nx, ny); } });
+            }
+            carve(1, 1); maze[exit.y][exit.x] = 0;
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            for (var y = 0; y < size; y++) for (var x = 0; x < size; x++) if (maze[y][x] === 1) { ctx.fillStyle = '#533483'; ctx.fillRect(x * cs, y * cs, cs, cs); }
+            ctx.fillStyle = '#4ecca3'; ctx.fillRect(player.x * cs + 4, player.y * cs + 4, cs - 8, cs - 8);
+            ctx.fillStyle = '#e94560'; ctx.fillRect(exit.x * cs + 4, exit.y * cs + 4, cs - 8, cs - 8);
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial';
+            var t = ''; if (start) { var e = Math.floor((Date.now() - start) / 1000); t = Math.floor(e / 60) + ':' + (e % 60 < 10 ? '0' : '') + e % 60; }
+            ctx.fillText('时间:' + t + ' | WASD移动 R重开', 10, size * cs + 25);
+            if (won) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#4ecca3'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('通关! 时间:' + t, 400, 280); }
+        }
+        
+        function reset() { genMaze(); player = {x: 1, y: 1}; won = false; start = Date.now(); draw(); }
+        document.onkeydown = function(e) {
+            if (e.keyCode === 82) { reset(); return; } if (won) return;
+            var nx = player.x, ny = player.y;
+            switch(e.keyCode) { case 37: case 65: nx--; break; case 38: case 87: ny--; break; case 39: case 68: nx++; break; case 40: case 83: ny++; break; }
+            if (nx >= 0 && nx < size && ny >= 0 && ny < size && maze[ny][nx] === 0) { player.x = nx; player.y = ny; if (player.x === exit.x && player.y === exit.y) won = true; }
+            draw();
+        };
+        reset();
+    }
+    
+    function initPong(canvas, ctx) {
+        var p1 = {y: 250, score: 0}, p2 = {y: 250, score: 0}, ball = {x: 400, y: 300, dx: 5, dy: 3}, loop, keys = {};
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.strokeStyle = '#533483'; ctx.setLineDash([10, 10]); ctx.beginPath(); ctx.moveTo(400, 0); ctx.lineTo(400, 600); ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = '#4ecca3'; ctx.fillRect(30, p1.y, 15, 100);
+            ctx.fillStyle = '#e94560'; ctx.fillRect(755, p2.y, 15, 100);
+            ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '60px Arial'; ctx.textAlign = 'center'; ctx.fillText(p1.score, 200, 80); ctx.fillText(p2.score, 600, 80);
+            ctx.font = '16px Arial'; ctx.fillText('W/S P1 | ↑/↓ P2 | 空格发球 R重开', 400, 590);
+        }
+        
+        function update() {
+            ball.x += ball.dx; ball.y += ball.dy;
+            if (ball.y < 10 || ball.y > 590) ball.dy = -ball.dy;
+            if (ball.x < 50 && ball.y > p1.y && ball.y < p1.y + 100) { ball.dx = Math.abs(ball.dx) * 1.1; ball.dy = (ball.y - p1.y) / 100 * 10 - 5; }
+            if (ball.x > 750 && ball.y > p2.y && ball.y < p2.y + 100) { ball.dx = -Math.abs(ball.dx) * 1.1; ball.dy = (ball.y - p2.y) / 100 * 10 - 5; }
+            if (ball.x < 0) { p2.score++; ball = {x: 400, y: 300, dx: 5, dy: 3}; }
+            if (ball.x > 800) { p1.score++; ball = {x: 400, y: 300, dx: -5, dy: 3}; }
+            if (keys[87] && p1.y > 0) p1.y -= 8; if (keys[83] && p1.y < 500) p1.y += 8; if (keys[38] && p2.y > 0) p2.y -= 8; if (keys[40] && p2.y < 500) p2.y += 8;
+            draw();
+        }
+        
+        function reset() { p1 = {y: 250, score: 0}; p2 = {y: 250, score: 0}; ball = {x: 400, y: 300, dx: 5, dy: 3}; keys = {}; clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 32) ball.dx = ball.x < 400 ? 5 : -5; if (e.keyCode === 82) reset(); };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        draw(); loop = setInterval(update, 16);
+    }
+    
+    function initRacing(canvas, ctx) {
+        var player = {x: 400, y: 500, w: 40, h: 60}, obstacles = [], score = 0, loop, over = false, keys = {}, lines = [];
+        for (var i = 0; i < 10; i++) lines.push({y: i * 70});
+        
+        function draw() {
+            ctx.fillStyle = '#2c3e50'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#7f8c8d'; ctx.fillRect(150, 0, 500, 600);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 5;
+            lines.forEach(function(l) { ctx.beginPath(); ctx.moveTo(175, l.y); ctx.lineTo(175, l.y + 40); ctx.stroke(); ctx.beginPath(); ctx.moveTo(625, l.y); ctx.lineTo(625, l.y + 40); ctx.stroke(); });
+            ctx.setLineDash([30, 20]); ctx.beginPath(); ctx.moveTo(400, 0); ctx.lineTo(400, 600); ctx.stroke(); ctx.setLineDash([]);
+            obstacles.forEach(function(o) { ctx.fillStyle = o.c; ctx.fillRect(o.x, o.y, o.w, o.h); });
+            ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(player.x + 20, player.y); ctx.lineTo(player.x, player.y + 60); ctx.lineTo(player.x + 40, player.y + 60); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '25px Arial'; ctx.fillText('分数:' + score, 10, 35); ctx.font = '16px Arial'; ctx.fillText('← →移动 R重开', 10, 590);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e74c3c'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('撞毁了! 得分:' + score, 400, 300); }
+        }
+        
+        function update() {
+            if (over) return;
+            if (keys[37] && player.x > 155) player.x -= 6; if (keys[39] && player.x < 605) player.x += 6;
+            lines.forEach(function(l) { l.y += 5; if (l.y > 600) l.y = -40; });
+            if (Math.random() < 0.02) { var colors = ['#e74c3c', '#9b59b6', '#f39c12', '#1abc9c']; obstacles.push({x: Math.random() * 445 + 155, y: -80, w: 50 + Math.random() * 30, h: 50 + Math.random() * 30, c: colors[Math.floor(Math.random() * colors.length)]}); }
+            obstacles.forEach(function(o, i) { o.y += 7; if (o.y > 650) { obstacles.splice(i, 1); score += 10; } });
+            obstacles.forEach(function(o) { if (player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) { over = true; clearInterval(loop); draw(); } });
+            score++; draw();
+        }
+        
+        function reset() { player = {x: 400, y: 500, w: 40, h: 60}; obstacles = []; score = 0; over = false; lines.forEach(function(l, i) { l.y = i * 70; }); clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 82) reset(); };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        draw(); loop = setInterval(update, 16);
+    }
+    
+    function initJump(canvas, ctx) {
+        var player = {x: 100, y: 450, w: 30, h: 30, vy: 0, onGround: false}, platforms = [], goal = {x: 700, y: 50, w: 60, h: 40}, loop, over = false, won = false, keys = {};
+        
+        function genPlatforms() { platforms = [{x: 50, y: 500, w: 150, h: 20}]; for (var i = 0; i < 8; i++) platforms.push({x: Math.random() * 650, y: 400 - i * 50, w: 80 + Math.random() * 50, h: 15}); }
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            platforms.forEach(function(p) { ctx.fillStyle = '#4ecca3'; ctx.fillRect(p.x, p.y, p.w, p.h); });
+            ctx.fillStyle = '#ffd700'; ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
+            ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.textAlign = 'center'; ctx.fillText('★', goal.x + 30, goal.y + 28);
+            ctx.fillStyle = '#e94560'; ctx.fillRect(player.x, player.y, player.w, player.h);
+            ctx.fillStyle = '#fff'; ctx.font = '16px Arial'; ctx.textAlign = 'left'; ctx.fillText('空格/W跳跃 ←→移动 R重开', 10, 590);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('掉下去了!', 400, 300); }
+            if (won) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#4ecca3'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('通关!', 400, 280); }
+        }
+        
+        function update() {
+            if (over || won) return;
+            if (keys[37]) player.x -= 5; if (keys[39]) player.x += 5;
+            if ((keys[32] || keys[87]) && player.onGround) { player.vy = -15; player.onGround = false; }
+            player.vy += 0.8; player.y += player.vy; player.onGround = false;
+            platforms.forEach(function(p) { if (player.x + player.w > p.x && player.x < p.x + p.w && player.y + player.h > p.y && player.y + player.h < p.y + 20 && player.vy >= 0) { player.y = p.y - player.h; player.vy = 0; player.onGround = true; } });
+            if (player.y > 600) { over = true; clearInterval(loop); draw(); return; }
+            if (player.x < 0) player.x = 0; if (player.x > 770) player.x = 770;
+            if (player.x < goal.x + goal.w && player.x + player.w > goal.x && player.y < goal.y + goal.h && player.y + player.h > goal.y) { won = true; clearInterval(loop); draw(); }
+            draw();
+        }
+        
+        function reset() { genPlatforms(); player = {x: 100, y: 450, w: 30, h: 30, vy: 0, onGround: false}; over = false; won = false; keys = {}; clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 82) reset(); };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        reset();
+    }
+    
+    function initShooter(canvas, ctx) {
+        var player = {x: 375, y: 550, w: 50, h: 40}, bullets = [], enemies = [], score = 0, lives = 3, loop, over = false, keys = {};
+        
+        function draw() {
+            ctx.fillStyle = '#0a0a1a'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#4ecca3'; ctx.beginPath(); ctx.moveTo(player.x + 25, player.y); ctx.lineTo(player.x, player.y + 40); ctx.lineTo(player.x + 50, player.y + 40); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#ffd700'; bullets.forEach(function(b) { ctx.fillRect(b.x - 2, b.y, 4, 15); });
+            ctx.fillStyle = '#e94560'; enemies.forEach(function(e) { ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2); ctx.fill(); });
+            ctx.fillStyle = '#fff'; ctx.font = '20px Arial';
+            var hearts = ''; for (var i = 0; i < lives; i++) hearts += '❤';
+            ctx.fillText('分数:' + score + ' 生命:' + hearts, 10, 30);
+            ctx.font = '16px Arial'; ctx.fillText('方向键移动 空格射击 R重开', 10, 590);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('游戏结束! 得分:' + score, 400, 300); }
+        }
+        
+        function update() {
+            if (over) return;
+            if (keys[37] && player.x > 0) player.x -= 6; if (keys[39] && player.x < 750) player.x += 6; if (keys[38] && player.y > 0) player.y -= 6; if (keys[40] && player.y < 560) player.y += 6;
+            bullets.forEach(function(b, i) { b.y -= 10; if (b.y < 0) bullets.splice(i, 1); });
+            if (Math.random() < 0.03) enemies.push({x: Math.random() * 750 + 25, y: -30, size: 20 + Math.random() * 10, dy: 2 + Math.random() * 2});
+            enemies.forEach(function(e, i) { e.y += e.dy; if (e.y > 630) { enemies.splice(i, 1); lives--; if (lives <= 0) { over = true; clearInterval(loop); draw(); } } });
+            enemies.forEach(function(e, i) { for (var j = bullets.length - 1; j >= 0; j--) { var b = bullets[j]; var dx = b.x - e.x, dy = b.y - e.y; if (Math.sqrt(dx * dx + dy * dy) < e.size) { enemies.splice(i, 1); bullets.splice(j, 1); score += 10; break; } } });
+            draw();
+        }
+        
+        function reset() { bullets = []; enemies = []; score = 0; lives = 3; player = {x: 375, y: 550, w: 50, h: 40}; over = false; keys = {}; clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 32) bullets.push({x: player.x + 25, y: player.y}); if (e.keyCode === 82) reset(); };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        draw(); loop = setInterval(update, 16);
+    }
+    
+    function initPacman(canvas, ctx) {
+        var player = {x: 10, y: 10, dir: 1}, dots = [], ghosts = [], score = 0, loop, over = false, won = false, keys = {};
+        var maze = [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],[1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,0,1],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],[1,0,1,1,1,0,1,0,1,1,1,1,0,1,0,1,1,1,0,1],[1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],[1,1,1,1,1,0,1,1,1,0,1,1,1,1,0,1,1,1,1,1],[1,1,1,1,1,0,1,0,0,0,0,0,0,1,0,1,1,1,1,1],[1,1,1,1,1,0,1,0,1,1,1,1,0,1,0,1,1,1,1,1],[0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0],[1,1,1,1,1,0,1,0,1,0,0,1,0,1,0,1,1,1,1,1],[1,1,1,1,1,0,1,0,1,1,1,1,0,1,0,1,1,1,1,1],[1,1,1,1,1,0,1,0,0,0,0,0,0,1,0,1,1,1,1,1],[1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,1],[1,0,1,1,1,0,1,1,1,0,0,0,0,1,1,1,0,1,0,1],[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],[1,1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],[1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1],[1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]];
+        var cs = 28;
+        
+        function init() {
+            dots = []; ghosts = []; score = 0; over = false; won = false; player = {x: 10, y: 10, dir: 1};
+            for (var y = 0; y < maze.length; y++) for (var x = 0; x < maze[y].length; x++) if (maze[y][x] === 0 && !(x === 10 && y === 10)) dots.push({x: x, y: y});
+            var colors = ['#ff0000', '#ffb8ff', '#00ffff', '#ffb852'];
+            for (var i = 0; i < 4; i++) ghosts.push({x: 10, y: 11, color: colors[i], dir: Math.floor(Math.random() * 4)});
+            clearInterval(loop); draw(); loop = setInterval(update, 150);
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 800, 600);
+            for (var y = 0; y < maze.length; y++) for (var x = 0; x < maze[y].length; x++) if (maze[y][x] === 1) { ctx.fillStyle = '#1a237e'; ctx.fillRect(x * cs, y * cs, cs, cs); }
+            ctx.fillStyle = '#fff'; dots.forEach(function(d) { ctx.beginPath(); ctx.arc(d.x * cs + cs / 2, d.y * cs + cs / 2, 3, 0, Math.PI * 2); ctx.fill(); });
+            ctx.fillStyle = '#ffff00'; ctx.beginPath(); ctx.arc(player.x * cs + cs / 2, player.y * cs + cs / 2, cs / 2 - 2, 0, Math.PI * 2); ctx.fill();
+            ghosts.forEach(function(g) { ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x * cs + cs / 2, g.y * cs + cs / 2, cs / 2 - 2, Math.PI, 0); ctx.fill(); ctx.fillRect(g.x * cs + cs / 2 - cs / 2 + 2, g.y * cs + cs / 2, cs - 4, cs / 2); });
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial'; ctx.fillText('分数:' + score + ' | 方向键移动 R重开', 10, 620);
+            if (over || won) { ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, 800, 620); ctx.fillStyle = won ? '#4ecca3' : '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText(over ? '游戏结束!' : '通关!', 400, 300); ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.fillText('得分:' + score + ' 按R重新开始', 400, 360); }
+        }
+        
+        function update() {
+            if (over || won) return;
+            var dirs = [{x: 0, y: -1}, {x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}];
+            if (keys[38] && maze[player.y - 1] && maze[player.y - 1][player.x] === 0) player.dir = 0;
+            if (keys[39] && maze[player.y][player.x + 1] === 0) player.dir = 1;
+            if (keys[40] && maze[player.y + 1] && maze[player.y + 1][player.x] === 0) player.dir = 2;
+            if (keys[37] && maze[player.y][player.x - 1] === 0) player.dir = 3;
+            var nx = player.x + dirs[player.dir].x, ny = player.y + dirs[player.dir].y;
+            if (maze[ny] && maze[ny][nx] === 0) { player.x = nx; player.y = ny; }
+            dots.forEach(function(d, i) { if (d.x === player.x && d.y === player.y) { dots.splice(i, 1); score += 10; } });
+            if (dots.length === 0) { won = true; clearInterval(loop); draw(); return; }
+            ghosts.forEach(function(g) { var poss = []; for (var d = 0; d < 4; d++) { var nxx = g.x + dirs[d].x, nyy = g.y + dirs[d].y; if (maze[nyy] && maze[nyy][nxx] === 0) poss.push(d); } if (poss.length > 0) g.dir = poss[Math.floor(Math.random() * poss.length)]; g.x += dirs[g.dir].x; g.y += dirs[g.dir].y; if (g.x === player.x && g.y === player.y) { over = true; clearInterval(loop); draw(); } });
+            draw();
+        }
+        
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 82) init(); };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        init();
+    }
+    
+    function initTank(canvas, ctx) {
+        var tank = {x: 400, y: 550, angle: 0, bullets: []}, enemies = [], score = 0, lives = 3, loop, over = false, keys = {}, lastShot = 0;
+        
+        function draw() {
+            ctx.fillStyle = '#2d5016'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#3d6b1e'; ctx.fillRect(0, 550, 800, 50);
+            tank.bullets.forEach(function(b) { ctx.fillStyle = '#ffd700'; ctx.fillRect(b.x - 3, b.y - 8, 6, 16); });
+            enemies.forEach(function(e) { ctx.fillStyle = '#8b0000'; ctx.fillRect(e.x - 15, e.y - 15, 30, 30); });
+            ctx.save(); ctx.translate(tank.x, tank.y); ctx.rotate(tank.angle); ctx.fillStyle = '#4ecca3'; ctx.fillRect(-15, -15, 30, 30); ctx.fillStyle = '#2d8a4e'; ctx.fillRect(0, -20, 10, 20); ctx.restore();
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial';
+            var hearts = ''; for (var i = 0; i < lives; i++) hearts += '❤';
+            ctx.fillText('分数:' + score + ' 生命:' + hearts + ' | WASD移动 空格射击 R重开', 10, 590);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('任务失败! 得分:' + score, 400, 300); }
+        }
+        
+        function update() {
+            if (over) return;
+            if (keys[87]) { tank.y -= 4; tank.angle = 0; } if (keys[83]) { tank.y += 4; tank.angle = Math.PI; } if (keys[65]) { tank.x -= 4; tank.angle = -Math.PI / 2; } if (keys[68]) { tank.x += 4; tank.angle = Math.PI / 2; }
+            tank.x = Math.max(20, Math.min(780, tank.x)); tank.y = Math.max(20, Math.min(550, tank.y));
+            if (keys[32] && Date.now() - lastShot > 300) { tank.bullets.push({x: tank.x + Math.cos(tank.angle) * 25, y: tank.y + Math.sin(tank.angle) * 25}); lastShot = Date.now(); }
+            tank.bullets.forEach(function(b, i) { b.y -= 10; if (b.y < 0) tank.bullets.splice(i, 1); });
+            if (Math.random() < 0.02) enemies.push({x: Math.random() * 760 + 20, y: 30, speed: 1 + Math.random() * 2});
+            enemies.forEach(function(e, i) { e.y += e.speed; if (e.y > 580) enemies.splice(i, 1); });
+            enemies.forEach(function(e, i) { for (var j = tank.bullets.length - 1; j >= 0; j--) { var b = tank.bullets[j]; if (e && b && Math.abs(e.x - b.x) < 20 && Math.abs(e.y - b.y) < 20) { enemies.splice(i, 1); tank.bullets.splice(j, 1); score += 20; break; } } });
+            enemies.forEach(function(e, i) { if (Math.abs(e.x - tank.x) < 30 && Math.abs(e.y - tank.y) < 30) { lives--; enemies.splice(i, 1); if (lives <= 0) { over = true; clearInterval(loop); draw(); } } });
+            draw();
+        }
+        
+        function reset() { tank = {x: 400, y: 550, angle: 0, bullets: []}; enemies = []; score = 0; lives = 3; over = false; keys = {}; clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        document.onkeydown = function(e) { keys[e.keyCode] = true; if (e.keyCode === 82) reset(); };
+        document.onkeyup = function(e) { keys[e.keyCode] = false; };
+        draw(); loop = setInterval(update, 16);
+    }
+    
+    function initGold(canvas, ctx) {
+        var hook = {x: 400, y: 80, angle: Math.PI / 2, length: 20, extending: false, retracting: false, speed: 5}, grabbed = null, gold = [], score = 0, timeLeft = 60, loop, over = false, lastTime;
+        for (var i = 0; i < 15; i++) gold.push({x: 100 + Math.random() * 600, y: 150 + Math.random() * 400, size: 10 + Math.random() * 15, value: Math.floor(Math.random() * 50) + 10, color: '#ffd700'});
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#4a3f2a'; ctx.fillRect(0, 80, 800, 520);
+            gold.forEach(function(g) { ctx.fillStyle = g.color; ctx.beginPath(); ctx.arc(g.x, g.y, g.size, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillText(g.value, g.x, g.y + 3); });
+            ctx.strokeStyle = '#888'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(hook.x, hook.y); ctx.lineTo(hook.x + Math.cos(hook.angle) * hook.length, hook.y + Math.sin(hook.angle) * hook.length); ctx.stroke();
+            ctx.fillStyle = '#4ecca3'; ctx.beginPath(); ctx.moveTo(hook.x, hook.y - 10); ctx.lineTo(hook.x - 8, hook.y + 10); ctx.lineTo(hook.x + 8, hook.y + 10); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial'; ctx.fillText('分数:' + score + ' 时间:' + timeLeft + '秒 | ↑↓调整角度 空格伸出/收回 R重开', 10, 590);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('时间到! 得分:' + score, 400, 300); }
+        }
+        
+        function update(t) {
+            if (over) return;
+            if (!lastTime) lastTime = t;
+            if (t - lastTime >= 1000) { timeLeft--; lastTime = t; if (timeLeft <= 0) { over = true; clearInterval(loop); draw(); return; } }
+            if (hook.extending) {
+                hook.length += hook.speed;
+                var ex = hook.x + Math.cos(hook.angle) * hook.length, ey = hook.y + Math.sin(hook.angle) * hook.length;
+                if (ex < 0 || ex > 800 || ey > 580) { hook.extending = false; hook.retracting = true; }
+                gold.forEach(function(g, i) { var dx = ex - g.x, dy = ey - g.y; if (Math.sqrt(dx * dx + dy * dy) < g.size + 10) { grabbed = i; hook.extending = false; hook.retracting = true; } });
+            }
+            if (hook.retracting) {
+                hook.length -= hook.speed;
+                if (grabbed !== null) { var g = gold[grabbed]; g.x += (hook.x - g.x) * 0.15; g.y += (hook.y - g.y) * 0.15; }
+                if (hook.length <= 20) { hook.length = 20; hook.retracting = false; if (grabbed !== null) { score += gold[grabbed].value; gold.splice(grabbed, 1); grabbed = null; } }
+            }
+            draw();
+        }
+        
+        function reset() { hook = {x: 400, y: 80, angle: Math.PI / 2, length: 20, extending: false, retracting: false, speed: 5}; grabbed = null; score = 0; timeLeft = 60; over = false; lastTime = null; gold = []; for (var i = 0; i < 15; i++) gold.push({x: 100 + Math.random() * 600, y: 150 + Math.random() * 400, size: 10 + Math.random() * 15, value: Math.floor(Math.random() * 50) + 10, color: '#ffd700'}); clearInterval(loop); draw(); loop = setInterval(function() { update(Date.now()); }, 16); }
+        document.onkeydown = function(e) { if (over && e.keyCode !== 82) return; if (e.keyCode === 82) { reset(); return; } if (e.keyCode === 38 && !hook.extending && !hook.retracting) { hook.angle -= 0.1; if (hook.angle < 0.1) hook.angle = 0.1; } if (e.keyCode === 40 && !hook.extending && !hook.retracting) { hook.angle += 0.1; if (hook.angle > Math.PI - 0.1) hook.angle = Math.PI - 0.1; } if (e.keyCode === 32 && !hook.extending && !hook.retracting) hook.extending = true; };
+        draw(); loop = setInterval(function() { update(Date.now()); }, 16);
+    }
+    
+    function initTower(canvas, ctx) {
+        var towers = [], enemies = [], money = 100, lives = 10, score = 0, loop, wave = 1, count = 5, spawned = 0, over = false, sel = 'basic';
+        var path = [{x: 0, y: 200}, {x: 200, y: 200}, {x: 200, y: 400}, {x: 600, y: 400}, {x: 600, y: 100}, {x: 800, y: 100}];
+        var types = { basic: {cost: 50, dmg: 10, range: 100, color: '#4ecca3'}, sniper: {cost: 100, dmg: 30, range: 200, color: '#e94560'}, rapid: {cost: 75, dmg: 5, range: 80, color: '#ffd700'} };
+        
+        function draw() {
+            ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#0f3460'; for (var x = 0; x < 20; x++) for (var y = 0; y < 15; y++) if ((x + y) % 2 === 0) ctx.fillRect(x * 40, y * 40, 40, 40);
+            ctx.strokeStyle = '#533483'; ctx.lineWidth = 40; ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y); path.forEach(function(p) { ctx.lineTo(p.x, p.y); }); ctx.stroke();
+            towers.forEach(function(t) { ctx.fillStyle = types[t.type].color; ctx.beginPath(); ctx.arc(t.x, t.y, 15, 0, Math.PI * 2); ctx.fill(); t.bullets.forEach(function(b) { ctx.fillStyle = '#ffd700'; ctx.fillRect(b.x - 3, b.y - 3, 6, 6); }); });
+            enemies.forEach(function(e) { ctx.fillStyle = '#e94560'; ctx.beginPath(); ctx.arc(e.x, e.y, 12, 0, Math.PI * 2); ctx.fill(); });
+            ctx.fillStyle = '#fff'; ctx.font = '18px Arial';
+            var hearts = ''; for (var i = 0; i < lives; i++) hearts += '❤';
+            ctx.fillText('金钱:$' + money + ' 生命:' + hearts + ' 波次:' + wave + ' 分数:' + score, 10, 30);
+            ctx.fillText('[1]基础($50) [2]狙击($100) [3]速射($75) | 点击建造 R重开', 10, 570);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 800, 600); ctx.fillStyle = '#e94560'; ctx.font = '40px Arial'; ctx.textAlign = 'center'; ctx.fillText('任务失败! 波次:' + wave + ' 得分:' + score, 400, 300); }
+        }
+        
+        function update() {
+            if (over) return;
+            if (spawned < count && enemies.length < 10 && Math.random() < 0.02) { var h = 30 + wave * 10; enemies.push({x: path[0].x, y: path[0].y, health: h, maxHealth: h, speed: 1 + wave * 0.1, pathIndex: 0}); spawned++; }
+            if (spawned >= count && enemies.length === 0) { wave++; count = 5 + wave * 2; spawned = 0; }
+            enemies.forEach(function(e, i) { var t = path[e.pathIndex + 1]; if (!t) { enemies.splice(i, 1); lives--; if (lives <= 0) { over = true; clearInterval(loop); draw(); } return; } var dx = t.x - e.x, dy = t.y - e.y, d = Math.sqrt(dx * dx + dy * dy); if (d < 5) e.pathIndex++; else { e.x += (dx / d) * e.speed; e.y += (dy / d) * e.speed; } });
+            towers.forEach(function(t) { if (!t.bullets) t.bullets = []; t.bullets.forEach(function(b, i) { b.x += b.dx; b.y += b.dy; b.life--; if (b.life <= 0) t.bullets.splice(i, 1); }); var target = null, minD = types[t.type].range; enemies.forEach(function(e) { var dx = e.x - t.x, dy = e.y - t.y, d = Math.sqrt(dx * dx + dy * dy); if (d < minD) { minD = d; target = e; } }); if (target) t.bullets.push({x: t.x, y: t.y, dx: (target.x - t.x) / 10, dy: (target.y - t.y) / 10, dmg: types[t.type].dmg, life: 30}); t.bullets.forEach(function(b, i) { enemies.forEach(function(e, j) { var dx = e.x - b.x, dy = e.y - b.y; if (Math.sqrt(dx * dx + dy * dy) < 15) { e.health -= b.dmg; t.bullets.splice(i, 1); if (e.health <= 0) { money += 10 + wave; score += 10; enemies.splice(j, 1); } } }); }); });
+            draw();
+        }
+        
+        function reset() { towers = []; enemies = []; money = 100; lives = 10; score = 0; wave = 1; count = 5; spawned = 0; over = false; clearInterval(loop); draw(); loop = setInterval(update, 16); }
+        canvas.onclick = function(e) { if (over) return; var rect = canvas.getBoundingClientRect(); var x = e.clientX - rect.left, y = e.clientY - rect.top; if (money >= types[sel].cost) { towers.push({x: x, y: y, type: sel, bullets: []}); money -= types[sel].cost; } };
+        document.onkeydown = function(e) { if (e.keyCode === 82) { reset(); return; } if (e.keyCode === 49) sel = 'basic'; if (e.keyCode === 50) sel = 'sniper'; if (e.keyCode === 51) sel = 'rapid'; };
+        reset();
+    }
+    
+    function initChess(canvas, ctx) {
+        var board = [], current = 'black', over = false, winner = '';
+        for (var i = 0; i < 15; i++) { board[i] = []; for (var j = 0; j < 15; j++) board[i][j] = 0; }
+        
+        function draw() {
+            ctx.fillStyle = '#deb887'; ctx.fillRect(0, 0, 600, 600);
+            ctx.strokeStyle = '#8b4513'; ctx.lineWidth = 1;
+            for (var i = 0; i < 15; i++) { ctx.beginPath(); ctx.moveTo(20, 20 + i * 40); ctx.lineTo(580, 20 + i * 40); ctx.stroke(); ctx.beginPath(); ctx.moveTo(20 + i * 40, 20); ctx.lineTo(20 + i * 40, 580); ctx.stroke(); }
+            var stars = [[3, 3], [3, 11], [7, 7], [11, 3], [11, 11]]; ctx.fillStyle = '#8b4513'; stars.forEach(function(s) { ctx.beginPath(); ctx.arc(20 + s[0] * 40, 20 + s[1] * 40, 4, 0, Math.PI * 2); ctx.fill(); });
+            for (var i = 0; i < 15; i++) for (var j = 0; j < 15; j++) { if (board[i][j] === 1) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(20 + j * 40, 20 + i * 40, 16, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke(); } else if (board[i][j] === 2) { ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(20 + j * 40, 20 + i * 40, 16, 0, Math.PI * 2); ctx.fill(); } }
+            ctx.fillStyle = '#16213e'; ctx.font = '16px Arial'; ctx.fillText('当前:' + (current === 'black' ? '黑方' : '白方'), 620, 30); ctx.fillText('五子棋 | 点击下棋 R重开', 620, 60);
+            if (over) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 600, 600); ctx.fillStyle = '#4ecca3'; ctx.font = '35px Arial'; ctx.textAlign = 'center'; ctx.fillText(winner + '获胜!', 300, 280); }
+        }
+        
+        function checkWin(r, c) { var p = board[r][c], dirs = [[1, 0], [0, 1], [1, 1], [1, -1]]; for (var d = 0; d < dirs.length; d++) { var cnt = 1; for (var i = 1; i < 5; i++) { var rr = r + dirs[d][0] * i, cc = c + dirs[d][1] * i; if (rr >= 0 && rr < 15 && cc >= 0 && cc < 15 && board[rr][cc] === p) cnt++; else break; } for (var i = 1; i < 5; i++) { var rr = r - dirs[d][0] * i, cc = c - dirs[d][1] * i; if (rr >= 0 && rr < 15 && cc >= 0 && cc < 15 && board[rr][cc] === p) cnt++; else break; } if (cnt >= 5) return true; } return false; }
+        
+        canvas.onclick = function(e) { if (over) return; var rect = canvas.getBoundingClientRect(); var x = e.clientX - rect.left, y = e.clientY - rect.top; var col = Math.round((x - 20) / 40), row = Math.round((y - 20) / 40); if (row >= 0 && row < 15 && col >= 0 && col < 15 && board[row][col] === 0) { board[row][col] = current === 'black' ? 1 : 2; if (checkWin(row, col)) { over = true; winner = current === 'black' ? '黑方' : '白方'; } else { current = current === 'black' ? 'white' : 'black'; } draw(); } };
+        document.onkeydown = function(e) { if (e.keyCode === 82) { for (var i = 0; i < 15; i++) for (var j = 0; j < 15; j++) board[i][j] = 0; current = 'black'; over = false; winner = ''; draw(); } };
+        draw();
+    }
+    
+    function initSudoku(canvas, ctx) {
+        var board = [], solution = [], selected = null, over = false;
+        
+        function generate() { var b = Array(9).fill(null).map(function() { return Array(9).fill(0); }); function solve(bb) { for (var r = 0; r < 9; r++) for (var c = 0; c < 9; c++) if (bb[r][c] === 0) { var n = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(function() { return Math.random() - 0.5; }); for (var num of n) { var ok = true; for (var i = 0; i < 9; i++) { if (bb[r][i] === num || bb[i][c] === num) { ok = false; break; } } var br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3; for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) { if (bb[br + i][bc + j] === num) { ok = false; break; } } if (ok) { bb[r][c] = num; if (solve(bb)) return true; bb[r][c] = 0; } } return false; } return true; } solve(b); return b; }
+        
+        function init() { solution = generate(); board = []; for (var i = 0; i < 9; i++) { board[i] = []; for (var j = 0; j < 9; j++) board[i][j] = {value: solution[i][j], fixed: false}; } var rem = 40; var pos = []; for (var i = 0; i < 9; i++) for (var j = 0; j < 9; j++) pos.push([i, j]); pos.sort(function() { return Math.random() - 0.5; }); for (var i = 0; i < rem; i++) board[pos[i][0]][pos[i][1]].value = 0; for (var i = 0; i < 9; i++) for (var j = 0; j < 9; j++) if (board[i][j].value !== 0) board[i][j].fixed = true; selected = null; over = false; draw(); }
+        
+        function draw() { ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 500, 550); var cs = 50, ox = 25, oy = 25; for (var i = 0; i < 9; i++) for (var j = 0; j < 9; j++) { var x = ox + j * cs, y = oy + i * cs; ctx.fillStyle = selected && selected[0] === i && selected[1] === j ? '#533483' : '#0f3460'; ctx.fillRect(x, y, cs, cs); ctx.strokeStyle = '#4ecca3'; ctx.lineWidth = 1; ctx.strokeRect(x, y, cs, cs); if (board[i][j].value !== 0) { ctx.fillStyle = board[i][j].fixed ? '#fff' : '#ffd700'; ctx.font = 'bold 30px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(board[i][j].value, x + cs / 2, y + cs / 2); } } ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; for (var i = 0; i <= 9; i++) { ctx.lineWidth = i % 3 === 0 ? 3 : 1; ctx.beginPath(); ctx.moveTo(ox + i * cs, oy); ctx.lineTo(ox + i * cs, oy + 9 * cs); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ox, oy + i * cs); ctx.lineTo(ox + 9 * cs, oy + i * cs); ctx.stroke(); } ctx.fillStyle = '#fff'; ctx.font = '14px Arial'; ctx.textAlign = 'left'; ctx.fillText('数独 | 点击选择 1-9输入数字 R重开', 10, 500); if (over) { ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, 500, 460); ctx.fillStyle = '#4ecca3'; ctx.font = '35px Arial'; ctx.textAlign = 'center'; ctx.fillText('完成!', 250, 220); } }
+        
+        canvas.onclick = function(e) { if (over) return; var rect = canvas.getBoundingClientRect(); var x = e.clientX - rect.left, y = e.clientY - rect.top; var col = Math.floor((x - ox) / 50), row = Math.floor((y - oy) / 50); if (row >= 0 && row < 9 && col >= 0 && col < 9 && !board[row][col].fixed) { selected = [row, col]; draw(); } };
+        document.onkeydown = function(e) { if (over && e.keyCode !== 82) return; if (e.keyCode === 82) { init(); return; } if (selected && e.keyCode >= 49 && e.keyCode <= 57) { var num = e.keyCode - 48, row = selected[0], col = selected[1]; if (num === solution[row][col]) { board[row][col].value = num; board[row][col].fixed = true; selected = null; var complete = true; for (var i = 0; i < 9; i++) for (var j = 0; j < 9; j++) if (board[i][j].value === 0) complete = false; if (complete) over = true; } draw(); } };
+        init();
+    }
+    
+    // 三角形突围游戏
+    function initTriangle(canvas, ctx) {
+        var player = {x: 400, y: 500, size: 20, angle: -Math.PI/2};
+        var rays = [];
+        var score = 0;
+        var gameOver = false;
+        var keys = {};
+        
+        function drawTriangle(x, y, size, angle, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(angle) * size, y + Math.sin(angle) * size);
+            ctx.lineTo(x + Math.cos(angle + 2.4) * size, y + Math.sin(angle + 2.4) * size);
+            ctx.lineTo(x + Math.cos(angle - 2.4) * size, y + Math.sin(angle - 2.4) * size);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, 800, 600);
+            
+            rays.forEach(function(r) {
+                ctx.strokeStyle = r.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(400, 300);
+                var endX = 400 + Math.cos(r.angle) * r.length;
+                var endY = 300 + Math.sin(r.angle) * r.length;
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            });
+            
+            drawTriangle(player.x, player.y, player.size, player.angle, '#4ecca3');
+            drawTriangle(player.x, player.y, player.size - 5, player.angle + 0.3, '#2d8a4e');
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('分数: ' + score + ' | 方向键移动', 10, 30);
+            
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, 800, 600);
+                ctx.fillStyle = '#e94560';
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('被射线击中!', 400, 280);
+                ctx.fillStyle = '#fff';
+                ctx.font = '20px Arial';
+                ctx.fillText('得分: ' + score + ' 按R重新开始', 400, 340);
+            }
+        }
+        
+        function update() {
+            if (gameOver) return;
+            
+            if (keys[37] && player.x > 20) player.x -= 5;
+            if (keys[39] && player.x < 780) player.x += 5;
+            if (keys[38] && player.y > 20) player.y -= 5;
+            if (keys[40] && player.y < 580) player.y += 5;
+            
+            player.angle += 0.05;
+            
+            if (Math.random() < 0.03) {
+                rays.push({angle: Math.random() * Math.PI * 2, length: 350, color: '#e94560'});
+            }
+            
+            for (var i = 0; i < rays.length; i++) {
+                rays[i].length -= 2;
+                if (rays[i].length < 0) {
+                    rays.splice(i, 1);
+                    i--;
+                    score += 10;
+                }
+            }
+            
+            rays.forEach(function(r) {
+                var rx = 400 + Math.cos(r.angle) * r.length;
+                var ry = 300 + Math.sin(r.angle) * r.length;
+                var dx = player.x - rx;
+                var dy = player.y - ry;
+                if (Math.sqrt(dx*dx + dy*dy) < player.size + 5) {
+                    gameOver = true;
+                }
+            });
+            
+            draw();
+        }
+        
+        function reset() {
+            player = {x: 400, y: 500, size: 20, angle: -Math.PI/2};
+            rays = [];
+            score = 0;
+            gameOver = false;
+            keys = {};
+        }
+        
+        document.onkeydown = function(e) {
+            keys[e.keyCode] = true;
+            if (e.keyCode === 82) reset();
+        };
+        document.onkeyup = function(e) {
+            keys[e.keyCode] = false;
+        };
+        
+        reset();
+        setInterval(update, 30);
+    }
+    
+    // 金字塔爬升游戏
+    function initPyramid(canvas, ctx) {
+        var player = {x: 400, y: 550, vy: 0};
+        var platforms = [];
+        var score = 0;
+        var gameOver = false;
+        var keys = {};
+        
+        function initPlatforms() {
+            platforms = [];
+            for (var i = 0; i < 10; i++) {
+                platforms.push({
+                    x: Math.random() * 700,
+                    y: 500 - i * 55,
+                    w: 60 + Math.random() * 40,
+                    h: 15
+                });
+            }
+        }
+        
+        function drawTriangle(x, y, size, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x - size * 0.8, y + size);
+            ctx.lineTo(x + size * 0.8, y + size);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, 800, 600);
+            
+            ctx.fillStyle = '#ffd700';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('金字塔', 400, 40);
+            
+            platforms.forEach(function(p) {
+                ctx.fillStyle = '#533483';
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                ctx.strokeStyle = '#e94560';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(p.x, p.y, p.w, p.h);
+            });
+            
+            drawTriangle(player.x, player.y, 15, '#4ecca3');
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('分数: ' + score + ' | 空格跳跃 ←→移动', 10, 580);
+            
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, 800, 600);
+                ctx.fillStyle = '#e94560';
+                ctx.font = '40px Arial';
+                ctx.fillText('掉下去了!', 400, 280);
+                ctx.fillStyle = '#fff';
+                ctx.font = '20px Arial';
+                ctx.fillText('按R重新开始', 400, 340);
+            }
+        }
+        
+        function update() {
+            if (gameOver) return;
+            
+            if (keys[37] && player.x > 10) player.x -= 4;
+            if (keys[39] && player.x < 790) player.x += 4;
+            
+            if ((keys[32] || keys[38]) && player.vy === 0) {
+                player.vy = -12;
+            }
+            
+            player.vy += 0.5;
+            player.y += player.vy;
+            
+            platforms.forEach(function(p) {
+                if (player.x > p.x && player.x < p.x + p.w &&
+                    player.y + 15 > p.y && player.y + 15 < p.y + p.h + 10 &&
+                    player.vy >= 0) {
+                    player.y = p.y - 15;
+                    player.vy = 0;
+                }
+            });
+            
+            if (player.y > 600) {
+                gameOver = true;
+            }
+            
+            platforms.forEach(function(p) {
+                p.y += 1;
+                if (p.y > 600) {
+                    p.y = -20;
+                    p.x = Math.random() * 700;
+                    p.w = 60 + Math.random() * 40;
+                    score += 10;
+                }
+            });
+            
+            draw();
+        }
+        
+        function reset() {
+            player = {x: 400, y: 550, vy: 0};
+            initPlatforms();
+            score = 0;
+            gameOver = false;
+            keys = {};
+        }
+        
+        document.onkeydown = function(e) {
+            keys[e.keyCode] = true;
+            if (e.keyCode === 82) reset();
+        };
+        document.onkeyup = function(e) {
+            keys[e.keyCode] = false;
+        };
+        
+        reset();
+        setInterval(update, 30);
+    }
+    
+    // 三角漩涡游戏
+    function initVortex(canvas, ctx) {
+        var player = {x: 400, y: 300, angle: 0, dist: 100};
+        var enemies = [];
+        var score = 0;
+        var gameOver = false;
+        
+        function drawTriangle(x, y, size, angle, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(angle) * size, y + Math.sin(angle) * size);
+            ctx.lineTo(x + Math.cos(angle + 2.4) * size, y + Math.sin(angle + 2.4) * size);
+            ctx.lineTo(x + Math.cos(angle - 2.4) * size, y + Math.sin(angle - 2.4) * size);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#16213e';
+            ctx.fillRect(0, 0, 800, 600);
+            
+            ctx.strokeStyle = '#533483';
+            ctx.lineWidth = 3;
+            for (var i = 0; i < 10; i++) {
+                ctx.beginPath();
+                ctx.arc(400, 300, 30 + i * 25, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            enemies.forEach(function(e) {
+                drawTriangle(e.x, e.y, e.size, e.angle, '#e94560');
+            });
+            
+            drawTriangle(player.x, player.y, 18, player.angle, '#4ecca3');
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('分数: ' + score + ' | 鼠标控制', 10, 30);
+            
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, 800, 600);
+                ctx.fillStyle = '#e94560';
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('游戏结束!', 400, 280);
+                ctx.fillStyle = '#fff';
+                ctx.font = '20px Arial';
+                ctx.fillText('得分: ' + score + ' 点击重新开始', 400, 340);
+            }
+        }
+        
+        function update() {
+            if (gameOver) return;
+            
+            player.angle += 0.03;
+            player.dist = Math.max(50, Math.min(250, player.dist));
+            player.x = 400 + Math.cos(player.angle) * player.dist;
+            player.y = 300 + Math.sin(player.angle) * player.dist;
+            
+            if (Math.random() < 0.05) {
+                var spawnAngle = Math.random() * Math.PI * 2;
+                enemies.push({
+                    x: 400 + Math.cos(spawnAngle) * 280,
+                    y: 300 + Math.sin(spawnAngle) * 280,
+                    angle: spawnAngle + Math.PI,
+                    size: 12,
+                    speed: 2 + Math.random() * 2
+                });
+            }
+            
+            enemies.forEach(function(e, i) {
+                var dx = 400 - e.x;
+                var dy = 300 - e.y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                e.x += (dx / dist) * e.speed;
+                e.y += (dy / dist) * e.speed;
+                e.angle += 0.1;
+                
+                if (dist < 30) {
+                    enemies.splice(i, 1);
+                    score += 10;
+                }
+                
+                var pdx = player.x - e.x;
+                var pdy = player.y - e.y;
+                if (Math.sqrt(pdx*pdx + pdy*pdy) < 25) {
+                    gameOver = true;
+                }
+            });
+            
+            draw();
+        }
+        
+        canvas.onmousemove = function(e) {
+            var rect = canvas.getBoundingClientRect();
+            var mx = e.clientX - rect.left;
+            var my = e.clientY - rect.top;
+            var dx = mx - 400;
+            var dy = my - 300;
+            player.dist = Math.sqrt(dx*dx + dy*dy);
+            player.angle = Math.atan2(dy, dx);
+        };
+        
+        canvas.onclick = function() {
+            if (gameOver) {
+                enemies = [];
+                score = 0;
+                player = {x: 400, y: 300, angle: 0, dist: 100};
+                gameOver = false;
+            }
+        };
+        
+        setInterval(update, 30);
+    }
+    
+    // 三角陨石游戏
+    function initAsteroid(canvas, ctx) {
+        var player = {x: 400, y: 550, angle: -Math.PI/2};
+        var asteroids = [];
+        var bullets = [];
+        var score = 0;
+        var gameOver = false;
+        var keys = {};
+        
+        function drawTriangle(x, y, size, angle, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(angle) * size, y + Math.sin(angle) * size);
+            ctx.lineTo(x + Math.cos(angle + 2.4) * size, y + Math.sin(angle + 2.4) * size);
+            ctx.lineTo(x + Math.cos(angle - 2.4) * size, y + Math.sin(angle - 2.4) * size);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, 800, 600);
+            
+            bullets.forEach(function(b) {
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            asteroids.forEach(function(a) {
+                drawTriangle(a.x, a.y, a.size, a.angle, '#e94560');
+            });
+            
+            drawTriangle(player.x, player.y, 15, player.angle, '#4ecca3');
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('分数: ' + score + ' | ←→移动 空格射击', 10, 30);
+            
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, 800, 600);
+                ctx.fillStyle = '#e94560';
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('被陨石击中!', 400, 280);
+                ctx.fillStyle = '#fff';
+                ctx.font = '20px Arial';
+                ctx.fillText('按R重新开始', 400, 340);
+            }
+        }
+        
+        function update() {
+            if (gameOver) return;
+            
+            if (keys[37] && player.x > 20) player.x -= 5;
+            if (keys[39] && player.x < 780) player.x += 5;
+            
+            player.angle = -Math.PI / 2;
+            
+            bullets.forEach(function(b, i) {
+                b.y -= 8;
+                if (b.y < 0) bullets.splice(i, 1);
+            });
+            
+            if (Math.random() < 0.03) {
+                asteroids.push({
+                    x: Math.random() * 780 + 10,
+                    y: -30,
+                    size: 15 + Math.random() * 20,
+                    angle: Math.PI / 2,
+                    speed: 2 + Math.random() * 3
+                });
+            }
+            
+            asteroids.forEach(function(a, i) {
+                a.y += a.speed;
+                a.angle += 0.05;
+                
+                if (a.y > 630) {
+                    asteroids.splice(i, 1);
+                }
+                
+                bullets.forEach(function(b, j) {
+                    var dx = b.x - a.x;
+                    var dy = b.y - a.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < a.size + 5) {
+                        asteroids.splice(i, 1);
+                        bullets.splice(j, 1);
+                        score += 20;
+                    }
+                });
+                
+                var pdx = player.x - a.x;
+                var pdy = player.y - a.y;
+                if (Math.sqrt(pdx*pdx + pdy*pdy) < a.size + 15) {
+                    gameOver = true;
+                }
+            });
+            
+            draw();
+        }
+        
+        function reset() {
+            player = {x: 400, y: 550, angle: -Math.PI/2};
+            asteroids = [];
+            bullets = [];
+            score = 0;
+            gameOver = false;
+            keys = {};
+        }
+        
+        document.onkeydown = function(e) {
+            keys[e.keyCode] = true;
+            if (e.keyCode === 32) bullets.push({x: player.x, y: player.y});
+            if (e.keyCode === 82) reset();
+        };
+        document.onkeyup = function(e) {
+            keys[e.keyCode] = false;
+        };
+        
+        reset();
+        setInterval(update, 30);
+    }
+    
+    // 扫雷游戏 - 修复版本
+    function initMine(canvas, ctx) {
+        var rows = 16, cols = 16, mines = 40, grid = [], revealed = [], over = false, won = false, flags = 0;
+        
+        function init() { grid = []; revealed = []; over = false; won = false; flags = 0; for (var i = 0; i < rows; i++) { grid[i] = []; revealed[i] = []; for (var j = 0; j < cols; j++) { grid[i][j] = 0; revealed[i][j] = false; } } var p = 0; while (p < mines) { var r = Math.floor(Math.random() * rows), c = Math.floor(Math.random() * cols); if (grid[r][c] !== -1) { grid[r][c] = -1; p++; } } for (var i = 0; i < rows; i++) for (var j = 0; j < cols; j++) if (grid[i][j] !== -1) { var c = 0; for (var di = -1; di <= 1; di++) for (var dj = -1; dj <= 1; dj++) { var ni = i + di, nj = j + dj; if (ni >= 0 && ni < rows && nj >= 0 && nj < cols && grid[ni][nj] === -1) c++; } grid[i][j] = c; } draw(); }
+        
+        function draw() { ctx.fillStyle = '#16213e'; ctx.fillRect(0, 0, 640, 520); var cs = 32, sx = 32, sy = 32; for (var i = 0; i < rows; i++) for (var j = 0; j < cols; j++) { var x = sx + j * cs, y = sy + i * cs; if (revealed[i][j]) { ctx.fillStyle = grid[i][j] === -1 ? '#e94560' : '#0f3460'; ctx.fillRect(x, y, cs, cs); if (grid[i][j] === -1) { ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('💣', x + cs / 2, y + cs / 2); } else if (grid[i][j] > 0) { ctx.fillStyle = ['#fff', '#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f39c12'][grid[i][j]]; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(grid[i][j], x + cs / 2, y + cs / 2); } } else { ctx.fillStyle = '#4ecca3'; ctx.fillRect(x, y, cs, cs); ctx.fillStyle = '#2d8a4e'; ctx.fillRect(x + 2, y + 2, cs - 4, cs - 4); } } var c = 0; for (var i = 0; i < rows; i++) for (var j = 0; j < cols; j++) if (revealed[i][j] && grid[i][j] === -1) c++; ctx.fillStyle = '#fff'; ctx.font = '16px Arial'; ctx.textAlign = 'left'; ctx.fillText('扫雷 | 左键翻开 右键标记 | 剩余:' + (mines - flags), 10, 500); if (c > 0) { ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 640, 480); ctx.fillStyle = '#e94560'; ctx.font = '35px Arial'; ctx.textAlign = 'center'; ctx.fillText('踩到地雷!', 320, 230); ctx.fillStyle = '#fff'; ctx.font = '20px Arial'; ctx.fillText('按R重新开始', 320, 280); } var unrevealed = 0; for (var i = 0; i < rows; i++) for (var j = 0; j < cols; j++) if (!revealed[i][j] && grid[i][j] !== -1) unrevealed++; if (unrevealed === 0 && !over) { won = true; ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 640, 480); ctx.fillStyle = '#4ecca3'; ctx.font = '35px Arial'; ctx.textAlign = 'center'; ctx.fillText('通关!', 320, 230); } }
+        
+        canvas.onclick = function(e) { if (over || won) return; var rect = canvas.getBoundingClientRect(); var x = e.clientX - rect.left, y = e.clientY - rect.top; var col = Math.floor((x - 32) / 32), row = Math.floor((y - 32) / 32); if (row >= 0 && row < rows && col >= 0 && col < cols && !revealed[row][col]) { revealed[row][col] = true; if (grid[row][col] === -1) over = true; draw(); } };
+        canvas.oncontextmenu = function(e) { e.preventDefault(); if (over || won) return; var rect = canvas.getBoundingClientRect(); var x = e.clientX - rect.left, y = e.clientY - rect.top; var col = Math.floor((x - 32) / 32), row = Math.floor((y - 32) / 32); if (row >= 0 && row < rows && col >= 0 && col < cols && !revealed[row][col]) { flags++; } };
+        document.onkeydown = function(e) { if (e.keyCode === 82) init(); };
+        init();
+    }
+    </script>
+</body>
+</html>
